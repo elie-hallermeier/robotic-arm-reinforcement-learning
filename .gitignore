@@ -1,0 +1,13 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# RL artifacts
+checkpoints/
+tb_logs/
+*.zip
+*.pkl
+
+# macOS
+.DS_Store
