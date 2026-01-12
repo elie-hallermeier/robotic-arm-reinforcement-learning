@@ -1,6 +1,6 @@
-import time
 import glob
 import os
+import time
 
 import gymnasium as gym
 import gymnasium_robotics
@@ -9,33 +9,21 @@ from stable_baselines3 import SAC
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 
 
-# ------------------------------------------------------------
-# Run one episode slowly
-# ------------------------------------------------------------
-def run_one_episode(model, env, sleep_s=0.05):
+def run_one_episode(model, env, sleep_s: float = 0.05) -> None:
     obs = env.reset()
     done = False
 
     while not done:
         action, _ = model.predict(obs, deterministic=True)
-
-        # VecEnv returns 4 values, NOT 5
         obs, reward, done, info = env.step(action)
 
         time.sleep(sleep_s)
-
-        # done is an array because this is a VecEnv
         done = done[0]
 
 
-
-# ------------------------------------------------------------
-# Main replay logic
-# ------------------------------------------------------------
-def main():
+def main() -> None:
     gym.register_envs(gymnasium_robotics)
 
-    # Base env WITH rendering
     def make_env():
         return gym.make(
             "FetchReachDense-v4",
@@ -44,42 +32,37 @@ def main():
 
     base_env = DummyVecEnv([make_env])
 
-    # Find policy checkpoints
-    policy_checkpoints = sorted(
+    # Find checkpoints
+    policy_paths = sorted(
         glob.glob("checkpoints/sac_reach_*_steps.zip"),
-        key=lambda x: int(os.path.basename(x).split("_")[2]),
+        key=lambda p: int(os.path.basename(p).split("_")[2]),
     )
 
-    if not policy_checkpoints:
-        raise RuntimeError("No policy checkpoints found")
+    if not policy_paths:
+        raise RuntimeError("No checkpoints found in checkpoints/")
 
-    print(f"Found {len(policy_checkpoints)} checkpoints")
+    print(f"Found {len(policy_paths)} checkpoints")
 
-    for policy_path in policy_checkpoints:
+    for policy_path in policy_paths:
         step = os.path.basename(policy_path).split("_")[2]
-        print(f"\nReplaying checkpoint at {step} steps")
-
-        # Load matching VecNormalize
         vecnorm_path = f"checkpoints/sac_reach_vecnormalize_{step}_steps.pkl"
 
         if not os.path.exists(vecnorm_path):
-            raise RuntimeError(f"Missing VecNormalize file: {vecnorm_path}")
+            raise RuntimeError(f"Missing VecNormalize for {step} steps: {vecnorm_path}")
+
+        print(f"\nReplaying {step} steps")
 
         vec_env = VecNormalize.load(vecnorm_path, base_env)
-
-        # IMPORTANT: evaluation mode
         vec_env.training = False
         vec_env.norm_reward = False
 
-        # Load model with this env
         model = SAC.load(policy_path, env=vec_env)
 
-        run_one_episode(
-            model=model,
-            env=vec_env,
-            sleep_s=0.05,
-        )
+        # One slow episode per checkpoint
+        run_one_episode(model, vec_env, sleep_s=0.01)
 
+        # Small pause so you feel the transition
+        time.sleep(0.0)
 
     base_env.close()
 
