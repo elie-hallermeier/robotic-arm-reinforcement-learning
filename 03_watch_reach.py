@@ -38,11 +38,7 @@ def main() -> None:
         key=lambda p: int(os.path.basename(p).split("_")[2]),
     )
 
-    if not policy_paths:
-        raise RuntimeError("No checkpoints found in checkpoints/")
-
-    print(f"Found {len(policy_paths)} checkpoints")
-
+    replays = []
     for policy_path in policy_paths:
         step = os.path.basename(policy_path).split("_")[2]
         vecnorm_path = f"checkpoints/sac_reach_vecnormalize_{step}_steps.pkl"
@@ -50,6 +46,16 @@ def main() -> None:
         if not os.path.exists(vecnorm_path):
             raise RuntimeError(f"Missing VecNormalize for {step} steps: {vecnorm_path}")
 
+        replays.append((step, policy_path, vecnorm_path))
+
+    if not replays:
+        # Fresh clone, nothing trained yet: replay the trained policy that ships with the repo
+        print("No checkpoints in checkpoints/, replaying the shipped final policy")
+        replays = [("500000 (final)", "sac_fetch_reach_final.zip", "vecnormalize_final.pkl")]
+
+    print(f"Found {len(replays)} policies to replay")
+
+    for step, policy_path, vecnorm_path in replays:
         print(f"\nReplaying {step} steps")
 
         vec_env = VecNormalize.load(vecnorm_path, base_env)
