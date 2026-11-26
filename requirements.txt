@@ -1,4 +1,5 @@
 gymnasium[mujoco]
 gymnasium-robotics
+mujoco<3.12  # newer releases break the Fetch environments in gymnasium-robotics 1.4
 stable-baselines3
 tensorboard
