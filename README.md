@@ -2,6 +2,10 @@
 
 I taught a simulated robot arm to reach for a target by trial and error, with no hand-written kinematics. It's a Fetch arm in MuJoCo, trained with Soft Actor-Critic.
 
+![The trained policy reaching six random targets in a row](docs/reach.gif)
+
+The trained policy on six random targets. The red dot is the target.
+
 ## The problem
 
 Getting an arm's gripper to a target is normally solved with inverse kinematics written by hand for that specific arm. I wanted to see how far a learned policy gets with no kinematic model at all, only trial, error and a distance signal, and to be able to watch it improve.
